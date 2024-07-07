@@ -12,7 +12,7 @@ class Name(Field):
 
 class Phone(Field):
     def __init__(self, value):
-        if len(value) != 10:
+        if len(value) != 10 and not value.isdigit():
             raise ValueError("Phone number must be 10 digits")
         super().__init__(value)
 
@@ -25,28 +25,21 @@ class Record:
         self.phones.append(Phone(phone))
         
     def remove_phone(self, phone):
-        phone_to_remove = Phone(phone)
-        if phone_to_remove in self.phones:
-            self.phones.remove(Phone(phone))
+        self.phones = [p for p in self.phones if p.value != phone]
     
     def edit_phone(self, old_phone, new_phone):
-        try:
-            index = self.phones.index(Phone(old_phone))
-            self.phones[index] = Phone(new_phone)
-        except ValueError:
-            print("Phone not found")
-    
+        self.phones = [Phone(new_phone) if p.value == old_phone else p for p in self.phones]
+
     def find_phone(self, phone):
-        phone_to_find = Phone(phone)
-        return phone_to_find if phone_to_find in self.phones else None
+        for p in self.phones:
+            if p.value == phone:
+                return p
+        return None
 
     def __str__(self):
         return f"Contact name: {self.name.value}, phones: {'; '.join(p.value for p in self.phones)}"
 
 class AddressBook(UserDict):
-    def __init__(self):
-        super().__init__()
-
     def add_record(self, record):
         self.data[record.name.value] = record
 
@@ -60,87 +53,44 @@ class AddressBook(UserDict):
     def __str__(self):
         return '\n'.join(str(record) for record in self.data.values())
     
-ab = AddressBook()
-rec = Record("John Doe")
-rec.add_phone("1234567890")
-rec.add_phone("0987654321")
-ab.add_record(rec)
 
-print(ab)
+# Створення нової адресної книги
+book = AddressBook()
 
-rec.edit_phone("1234567890", "1112223333")
-print(ab)
+# Створення запису для John
+john_record = Record("John")
+
+john_record.add_phone("1234567890")
+john_record.add_phone("5555555555")
+
+# Додавання запису John до адресної книги
+book.add_record(john_record)
 
 
+# Створення та додавання нового запису для Jane
+jane_record = Record("Jane")
+jane_record.add_phone("9876543210")
+book.add_record(jane_record)
+#
+# Виведення всіх записів у книзі
+for name, record in book.data.items():
+    print(record)
 
-"""
-def input_error(func):
-    def inner(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except ValueError:
-            return "Give me name and phone please."
-        except IndexError:
-            return "Enter the arguments for the command."
-        except KeyError:
-            return "Contact not found."
-        except Exception as e:
-            return str(e)
-    return inner
+# Знаходження та редагування телефону для John
+john = book.find("John")
+john.edit_phone("1234567890", "1112223333")
 
-def parse_input(user_input):
-    cmd, *args = user_input.split()
-    cmd = cmd.lower().strip()
-    return cmd, *args
+print(john)  # Виведення: Contact name: John, phones: 1112223333; 5555555555
 
-@input_error
-def add_contact(args, contacts):
-    name, phone = args
-    contacts[name] = phone
-    return "Contact added"
+# Пошук конкретного телефону у записі John
+found_phone = john.find_phone("5552555555")
+print(f"{john.name}: {found_phone}")  # Виведення: 5555555555
 
-@input_error
-def change_contact(args, contacts):
-    name, new_number = args
-    contacts[name] = new_number
-    return "Contact updated"
+# Видалення запису Jane
+book.delete("Jane")
 
-@input_error
-def show_phone(args, contacts):
-    name = args[0]
-    return contacts[name]
-   
-@input_error 
-def show_all(args, contacts):
-    if contacts:
-        return "\n".join(f"{name}: {phone}" for name, phone in contacts.items())
-    return "No contacts are available."
-    
-def main():
-    contacts = {}
-    print("Welcome to the assistant bot!")
-    
-    while True:
-        user_input = input("Enter a command: ").strip().lower()
-        command, *args = parse_input(user_input)
-        
-        match command:
-            case 'exit' | 'close':
-                print('Good bye!')
-                break
-            case "hello":
-                print("How can I help you?")
-            case "add":
-                print(add_contact(args, contacts))
-            case "change": 
-                print(change_contact(args, contacts))
-            case "phone": 
-                print(show_phone(args, contacts))
-            case "all":
-                print(show_all(args, contacts))
-            case _:
-                print("Invalid command")
-    
-if __name__ == "__main__":
-    main()
-"""
+john_record.remove_phone("5515155555")
+
+# Виведення всіх записів у книзі
+for name, record in book.data.items():
+    print(record)
